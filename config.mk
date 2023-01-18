@@ -1,32 +1,31 @@
-# surf version
-VERSION = 2.0
-
-# Customize below to fit your system
+# dmenu version
+VERSION = 5.0
 
 # paths
 PREFIX = /usr/local
 MANPREFIX = $(PREFIX)/share/man
-LIBPREFIX = $(PREFIX)/lib
-LIBDIR = $(LIBPREFIX)/surf
 
-X11INC = `pkg-config --cflags x11`
-X11LIB = `pkg-config --libs x11`
+X11INC = /usr/X11R6/include
+X11LIB = /usr/X11R6/lib
 
-GTKINC = `pkg-config --cflags gtk+-3.0 gcr-3 webkit2gtk-4.0`
-GTKLIB = `pkg-config --libs gtk+-3.0 gcr-3 webkit2gtk-4.0`
-WEBEXTINC = `pkg-config --cflags webkit2gtk-4.0 webkit2gtk-web-extension-4.0 gio-2.0`
-WEBEXTLIBS = `pkg-config --libs webkit2gtk-4.0 webkit2gtk-web-extension-4.0 gio-2.0`
+# Xinerama, comment if you don't want it
+XINERAMALIBS  = -lXinerama
+XINERAMAFLAGS = -DXINERAMA
+
+# freetype
+FREETYPELIBS = -lfontconfig -lXft
+FREETYPEINC = /usr/include/freetype2
+# OpenBSD (uncomment)
+#FREETYPEINC = $(X11INC)/freetype2
 
 # includes and libs
-INCS = $(X11INC) $(GTKINC)
-LIBS = $(X11LIB) $(GTKLIB) -lgthread-2.0
+INCS = -I$(X11INC) -I$(FREETYPEINC)
+LIBS = -L$(X11LIB) -lX11 $(XINERAMALIBS) $(FREETYPELIBS)
 
 # flags
-CPPFLAGS = -DVERSION=\"$(VERSION)\" -DGCR_API_SUBJECT_TO_CHANGE \
-           -DLIBPREFIX=\"$(LIBPREFIX)\" -DWEBEXTDIR=\"$(LIBDIR)\" \
-           -D_DEFAULT_SOURCE
-SURFCFLAGS = -fPIC $(INCS) $(CPPFLAGS)
-WEBEXTCFLAGS = -fPIC $(WEBEXTINC)
+CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 -D_POSIX_C_SOURCE=200809L -DVERSION=\"$(VERSION)\" $(XINERAMAFLAGS)
+CFLAGS   = -std=c99 -pedantic -Wall -Os $(INCS) $(CPPFLAGS)
+LDFLAGS  = $(LIBS)
 
-# compiler
-#CC = c99
+# compiler and linker
+CC = cc

@@ -1,76 +1,64 @@
-# surf - simple browser
+# dmenu - dynamic menu
 # See LICENSE file for copyright and license details.
-.POSIX:
 
 include config.mk
 
-SRC = surf.c
-WSRC = webext-surf.c
+SRC = drw.c dmenu.c stest.c util.c
 OBJ = $(SRC:.c=.o)
-WOBJ = $(WSRC:.c=.o)
-WLIB = $(WSRC:.c=.so)
 
-all: options surf $(WLIB)
+all: options dmenu stest
 
 options:
-	@echo surf build options:
-	@echo "CC            = $(CC)"
-	@echo "CFLAGS        = $(SURFCFLAGS) $(CFLAGS)"
-	@echo "WEBEXTCFLAGS  = $(WEBEXTCFLAGS) $(CFLAGS)"
-	@echo "LDFLAGS       = $(LDFLAGS)"
+	@echo dmenu build options:
+	@echo "CFLAGS   = $(CFLAGS)"
+	@echo "LDFLAGS  = $(LDFLAGS)"
+	@echo "CC       = $(CC)"
 
-surf: $(OBJ)
-	$(CC) $(SURFLDFLAGS) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
-
-$(OBJ) $(WOBJ): config.h common.h config.mk
+.c.o:
+	$(CC) -c $(CFLAGS) $<
 
 config.h:
 	cp config.def.h $@
 
-$(OBJ): $(SRC)
-	$(CC) $(SURFCFLAGS) $(CFLAGS) -c $(SRC)
+$(OBJ): arg.h config.h config.mk drw.h
 
-$(WLIB): $(WOBJ)
-	$(CC) -shared -Wl,-soname,$@ $(LDFLAGS) -o $@ $? $(WEBEXTLIBS)
+dmenu: dmenu.o drw.o util.o
+	$(CC) -o $@ dmenu.o drw.o util.o $(LDFLAGS)
 
-$(WOBJ): $(WSRC)
-	$(CC) $(WEBEXTCFLAGS) $(CFLAGS) -c $(WSRC)
+stest: stest.o
+	$(CC) -o $@ stest.o $(LDFLAGS)
 
 clean:
-	rm -f surf $(OBJ)
-	rm -f $(WLIB) $(WOBJ)
+	rm -f dmenu stest $(OBJ) dmenu-$(VERSION).tar.gz
 
-distclean: clean
-	rm -f config.h surf-$(VERSION).tar.gz
-
-dist: distclean
-	mkdir -p surf-$(VERSION)
-	cp -R LICENSE Makefile config.mk config.def.h README \
-	    surf-open.sh arg.h TODO.md surf.png \
-	    surf.1 $(SRC) $(CSRC) $(WSRC) surf-$(VERSION)
-	tar -cf surf-$(VERSION).tar surf-$(VERSION)
-	gzip surf-$(VERSION).tar
-	rm -rf surf-$(VERSION)
+dist: clean
+	mkdir -p dmenu-$(VERSION)
+	cp LICENSE Makefile README arg.h config.def.h config.mk dmenu.1\
+		drw.h util.h dmenu_path dmenu_run stest.1 $(SRC)\
+		dmenu-$(VERSION)
+	tar -cf dmenu-$(VERSION).tar dmenu-$(VERSION)
+	gzip dmenu-$(VERSION).tar
+	rm -rf dmenu-$(VERSION)
 
 install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp -f surf $(DESTDIR)$(PREFIX)/bin
-	chmod 755 $(DESTDIR)$(PREFIX)/bin/surf
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	cp -f $(WLIB) $(DESTDIR)$(LIBDIR)
-	for wlib in $(WLIB); do \
-	    chmod 644 $(DESTDIR)$(LIBDIR)/$$wlib; \
-	done
+	cp -f dmenu dmenu_path dmenu_run stest $(DESTDIR)$(PREFIX)/bin
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/dmenu
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/dmenu_path
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/dmenu_run
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/stest
 	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
-	sed "s/VERSION/$(VERSION)/g" < surf.1 > $(DESTDIR)$(MANPREFIX)/man1/surf.1
-	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/surf.1
+	sed "s/VERSION/$(VERSION)/g" < dmenu.1 > $(DESTDIR)$(MANPREFIX)/man1/dmenu.1
+	sed "s/VERSION/$(VERSION)/g" < stest.1 > $(DESTDIR)$(MANPREFIX)/man1/stest.1
+	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/dmenu.1
+	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/stest.1
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/surf
-	rm -f $(DESTDIR)$(MANPREFIX)/man1/surf.1
-	for wlib in $(WLIB); do \
-	    rm -f $(DESTDIR)$(LIBDIR)/$$wlib; \
-	done
-	- rmdir $(DESTDIR)$(LIBDIR)
+	rm -f $(DESTDIR)$(PREFIX)/bin/dmenu\
+		$(DESTDIR)$(PREFIX)/bin/dmenu_path\
+		$(DESTDIR)$(PREFIX)/bin/dmenu_run\
+		$(DESTDIR)$(PREFIX)/bin/stest\
+		$(DESTDIR)$(MANPREFIX)/man1/dmenu.1\
+		$(DESTDIR)$(MANPREFIX)/man1/stest.1
 
-.PHONY: all options distclean clean dist install uninstall
+.PHONY: all options clean dist install uninstall
