@@ -1,34 +1,40 @@
-st - simple terminal
---------------------
-st is a simple terminal emulator for X which sucks less.
-
+surf - simple webkit-based browser
+==================================
+surf is a simple Web browser based on WebKit/GTK+.
 
 Requirements
 ------------
-In order to build st you need the Xlib header files.
+In order to build surf you need GTK+ and Webkit/GTK+ header files.
 
+In order to use the functionality of the url-bar, also install dmenu[0].
 
 Installation
 ------------
-Edit config.mk to match your local setup (st is installed into
+Edit config.mk to match your local setup (surf is installed into
 the /usr/local namespace by default).
 
-Afterwards enter the following command to build and install st (if
+Afterwards enter the following command to build and install surf (if
 necessary as root):
 
     make clean install
 
+Running surf
+------------
+run
+	surf [URI]
 
-Running st
-----------
-If you did not install st with make clean install, you must compile
-the st terminfo entry with the following command:
+See the manpage for further options.
 
-    tic -sx st.info
+Running surf in tabbed
+----------------------
+For running surf in tabbed[1] there is a script included in the distribution,
+which is run like this:
 
-See the man page for additional details.
+	surf-open.sh [URI]
 
-Credits
--------
-Based on Aurélien APTEL <aurelien dot aptel at gmail dot com> bt source code.
+Further invocations of the script will run surf with the specified URI in this
+instance of tabbed.
+
+[0] http://tools.suckless.org/dmenu
+[1] http://tools.suckless.org/tabbed
 

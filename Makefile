@@ -1,57 +1,76 @@
-# st - simple terminal
+# surf - simple browser
 # See LICENSE file for copyright and license details.
 .POSIX:
 
 include config.mk
 
-SRC = st.c x.c
+SRC = surf.c
+WSRC = webext-surf.c
 OBJ = $(SRC:.c=.o)
+WOBJ = $(WSRC:.c=.o)
+WLIB = $(WSRC:.c=.so)
 
-all: options st
+all: options surf $(WLIB)
 
 options:
-	@echo st build options:
-	@echo "CFLAGS  = $(STCFLAGS)"
-	@echo "LDFLAGS = $(STLDFLAGS)"
-	@echo "CC      = $(CC)"
+	@echo surf build options:
+	@echo "CC            = $(CC)"
+	@echo "CFLAGS        = $(SURFCFLAGS) $(CFLAGS)"
+	@echo "WEBEXTCFLAGS  = $(WEBEXTCFLAGS) $(CFLAGS)"
+	@echo "LDFLAGS       = $(LDFLAGS)"
+
+surf: $(OBJ)
+	$(CC) $(SURFLDFLAGS) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
+
+$(OBJ) $(WOBJ): config.h common.h config.mk
 
 config.h:
-	cp config.def.h config.h
+	cp config.def.h $@
 
-.c.o:
-	$(CC) $(STCFLAGS) -c $<
+$(OBJ): $(SRC)
+	$(CC) $(SURFCFLAGS) $(CFLAGS) -c $(SRC)
 
-st.o: config.h st.h win.h
-x.o: arg.h config.h st.h win.h
+$(WLIB): $(WOBJ)
+	$(CC) -shared -Wl,-soname,$@ $(LDFLAGS) -o $@ $? $(WEBEXTLIBS)
 
-$(OBJ): config.h config.mk
-
-st: $(OBJ)
-	$(CC) -o $@ $(OBJ) $(STLDFLAGS)
+$(WOBJ): $(WSRC)
+	$(CC) $(WEBEXTCFLAGS) $(CFLAGS) -c $(WSRC)
 
 clean:
-	rm -f st $(OBJ) st-$(VERSION).tar.gz
+	rm -f surf $(OBJ)
+	rm -f $(WLIB) $(WOBJ)
 
-dist: clean
-	mkdir -p st-$(VERSION)
-	cp -R FAQ LEGACY TODO LICENSE Makefile README config.mk\
-		config.def.h st.info st.1 arg.h st.h win.h $(SRC)\
-		st-$(VERSION)
-	tar -cf - st-$(VERSION) | gzip > st-$(VERSION).tar.gz
-	rm -rf st-$(VERSION)
+distclean: clean
+	rm -f config.h surf-$(VERSION).tar.gz
 
-install: st
+dist: distclean
+	mkdir -p surf-$(VERSION)
+	cp -R LICENSE Makefile config.mk config.def.h README \
+	    surf-open.sh arg.h TODO.md surf.png \
+	    surf.1 $(SRC) $(CSRC) $(WSRC) surf-$(VERSION)
+	tar -cf surf-$(VERSION).tar surf-$(VERSION)
+	gzip surf-$(VERSION).tar
+	rm -rf surf-$(VERSION)
+
+install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp -f st $(DESTDIR)$(PREFIX)/bin
-	chmod 755 $(DESTDIR)$(PREFIX)/bin/st
+	cp -f surf $(DESTDIR)$(PREFIX)/bin
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/surf
+	mkdir -p $(DESTDIR)$(LIBDIR)
+	cp -f $(WLIB) $(DESTDIR)$(LIBDIR)
+	for wlib in $(WLIB); do \
+	    chmod 644 $(DESTDIR)$(LIBDIR)/$$wlib; \
+	done
 	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
-	sed "s/VERSION/$(VERSION)/g" < st.1 > $(DESTDIR)$(MANPREFIX)/man1/st.1
-	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/st.1
-	tic -sx st.info
-	@echo Please see the README file regarding the terminfo entry of st.
+	sed "s/VERSION/$(VERSION)/g" < surf.1 > $(DESTDIR)$(MANPREFIX)/man1/surf.1
+	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/surf.1
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/st
-	rm -f $(DESTDIR)$(MANPREFIX)/man1/st.1
+	rm -f $(DESTDIR)$(PREFIX)/bin/surf
+	rm -f $(DESTDIR)$(MANPREFIX)/man1/surf.1
+	for wlib in $(WLIB); do \
+	    rm -f $(DESTDIR)$(LIBDIR)/$$wlib; \
+	done
+	- rmdir $(DESTDIR)$(LIBDIR)
 
-.PHONY: all options clean dist install uninstall
+.PHONY: all options distclean clean dist install uninstall
