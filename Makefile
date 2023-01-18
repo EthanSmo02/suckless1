@@ -1,67 +1,57 @@
-# See LICENSE file for copyright and license details
-# slstatus - suckless status monitor
+# st - simple terminal
+# See LICENSE file for copyright and license details.
 .POSIX:
 
 include config.mk
 
-REQ = util
-COM =\
-	components/battery\
-	components/cpu\
-	components/datetime\
-	components/disk\
-	components/entropy\
-	components/hostname\
-	components/ip\
-	components/kernel_release\
-	components/keyboard_indicators\
-	components/keymap\
-	components/load_avg\
-	components/netspeeds\
-	components/num_files\
-	components/ram\
-	components/run_command\
-	components/swap\
-	components/temperature\
-	components/uptime\
-	components/user\
-	components/volume\
-	components/wifi
+SRC = st.c x.c
+OBJ = $(SRC:.c=.o)
 
-all: slstatus
+all: options st
 
-$(COM:=.o): config.mk $(REQ:=.h)
-slstatus.o: slstatus.c slstatus.h arg.h config.h config.mk $(REQ:=.h)
-
-.c.o:
-	$(CC) -o $@ -c $(CPPFLAGS) $(CFLAGS) $<
+options:
+	@echo st build options:
+	@echo "CFLAGS  = $(STCFLAGS)"
+	@echo "LDFLAGS = $(STLDFLAGS)"
+	@echo "CC      = $(CC)"
 
 config.h:
-	cp config.def.h $@
+	cp config.def.h config.h
 
-slstatus: slstatus.o $(COM:=.o) $(REQ:=.o)
-	$(CC) -o $@ $(LDFLAGS) $(COM:=.o) $(REQ:=.o) slstatus.o $(LDLIBS)
+.c.o:
+	$(CC) $(STCFLAGS) -c $<
+
+st.o: config.h st.h win.h
+x.o: arg.h config.h st.h win.h
+
+$(OBJ): config.h config.mk
+
+st: $(OBJ)
+	$(CC) -o $@ $(OBJ) $(STLDFLAGS)
 
 clean:
-	rm -f slstatus slstatus.o $(COM:=.o) $(REQ:=.o)
+	rm -f st $(OBJ) st-$(VERSION).tar.gz
 
-dist:
-	rm -rf "slstatus-$(VERSION)"
-	mkdir -p "slstatus-$(VERSION)/components"
-	cp -R LICENSE Makefile README config.mk config.def.h \
-	      arg.h slstatus.c $(COM:=.c) $(REQ:=.c) $(REQ:=.h) \
-	      slstatus.1 "slstatus-$(VERSION)"
-	tar -cf - "slstatus-$(VERSION)" | gzip -c > "slstatus-$(VERSION).tar.gz"
-	rm -rf "slstatus-$(VERSION)"
+dist: clean
+	mkdir -p st-$(VERSION)
+	cp -R FAQ LEGACY TODO LICENSE Makefile README config.mk\
+		config.def.h st.info st.1 arg.h st.h win.h $(SRC)\
+		st-$(VERSION)
+	tar -cf - st-$(VERSION) | gzip > st-$(VERSION).tar.gz
+	rm -rf st-$(VERSION)
 
-install: all
-	mkdir -p "$(DESTDIR)$(PREFIX)/bin"
-	cp -f slstatus "$(DESTDIR)$(PREFIX)/bin"
-	chmod 755 "$(DESTDIR)$(PREFIX)/bin/slstatus"
-	mkdir -p "$(DESTDIR)$(MANPREFIX)/man1"
-	cp -f slstatus.1 "$(DESTDIR)$(MANPREFIX)/man1"
-	chmod 644 "$(DESTDIR)$(MANPREFIX)/man1/slstatus.1"
+install: st
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp -f st $(DESTDIR)$(PREFIX)/bin
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/st
+	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
+	sed "s/VERSION/$(VERSION)/g" < st.1 > $(DESTDIR)$(MANPREFIX)/man1/st.1
+	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/st.1
+	tic -sx st.info
+	@echo Please see the README file regarding the terminfo entry of st.
 
 uninstall:
-	rm -f "$(DESTDIR)$(PREFIX)/bin/slstatus"
-	rm -f "$(DESTDIR)$(MANPREFIX)/man1/slstatus.1"
+	rm -f $(DESTDIR)$(PREFIX)/bin/st
+	rm -f $(DESTDIR)$(MANPREFIX)/man1/st.1
+
+.PHONY: all options clean dist install uninstall
